@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>MIU - Thu ngân</title>
+<title>MIU Nhân viên</title>
+<meta property="og:title" content="MIU Nhân viên">
+<meta property="og:site_name" content="MIU Nhân viên">
+<meta name="apple-mobile-web-app-title" content="MIU Nhân viên">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -3340,9 +3343,18 @@
   .pmt-qr-img { width: 150px; height: 150px; border: 1px solid #e2e6eb; border-radius: 8px; background: #fff; flex-shrink: 0; overflow: hidden; }
   .pmt-qr-img svg { display: block; width: 100%; height: 100%; }
   .pmt-qr-info { font-size: 13.5px; line-height: 1.7; color: #3e464f; }
-  .pmt-left > #pmtQrBox { flex-shrink: 0; padding: 14px 22px; border-top: 1px solid #e8eaed; background: #f7f8f9; }
-  .pmt-left > #pmtQrBox .pmt-qr { margin: 0; padding: 0; border-top: none; gap: 18px; }
-  .pmt-left > #pmtQrBox .pmt-qr-img { width: 160px; height: 160px; }
+  .pmt-left > #pmtQrBox { flex-shrink: 0; padding: 8px 22px; border-top: 1px solid #e8eaed; background: #f7f8f9; }
+  .pmt-qr-open { display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid #0070f4; background: #fff; color: #0070f4; border-radius: 999px; padding: 7px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .pmt-qr-open:hover { background: #e6f1fe; }
+  .pmt-qr-open svg { width: 16px; height: 16px; }
+  .pmt-qr-pop { position: fixed; inset: 0; z-index: 2300; display: none; align-items: center; justify-content: center; background: rgba(15,17,20,0.45); }
+  .pmt-qr-pop.show { display: flex; }
+  .pmt-qr-card { background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.28); padding: 18px 22px 20px; width: 340px; max-width: 94vw; max-height: 94vh; overflow-y: auto; text-align: center; position: relative; }
+  .pmt-qr-card .pmt-qr { flex-direction: column; margin: 0; padding: 0; border-top: none; gap: 12px; align-items: center; }
+  .pmt-qr-card .pmt-qr-img { width: 240px; height: 240px; max-width: 70vw; max-height: 70vw; }
+  .pmt-qr-card .pmt-qr-info { text-align: center; }
+  .pmt-qr-card h4 { font-size: 15px; font-weight: 700; color: #15171a; margin: 0 0 12px; }
+  .pmt-qr-x { position: absolute; top: 8px; right: 10px; border: none; background: none; font-size: 24px; line-height: 1; color: #525d6a; cursor: pointer; padding: 4px 8px; }
   .pmt-qr-info b { color: #15171a; }
   .pmt-split-sep { border-top: 1px dashed #e2e6eb; margin: 10px 0 8px; }
   .pmt-quick-amounts button { display: inline-block; margin: 0 8px 8px 0; border-radius: 999px !important; }
@@ -19234,7 +19246,8 @@
             <span>ĐỒ UỐNG</span><span>SL</span><span>ĐƠN GIÁ</span><span>THÀNH TIỀN</span>
           </div>
           <div class="pmt-items-body" id="pmtItemsBody"></div>
-          <div id="pmtQrBox" style="display:none"></div>
+          <div id="pmtQrBox" style="display:none"><button type="button" class="pmt-qr-open" onclick="pmtQrPopShow(true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20h1"/></svg>Hiện mã QR chuyển khoản</button></div>
+          <div class="pmt-qr-pop" id="pmtQrPop" onclick="if (event.target === this) pmtQrPopShow(false);"><div class="pmt-qr-card"><button type="button" class="pmt-qr-x" onclick="pmtQrPopShow(false)">&times;</button><h4>Quét mã chuyển khoản</h4><div id="pmtQrPopBody"></div></div></div>
           <div class="pmt-left-foot">
             <span>Tổng tiền hàng <span class="lbl-count" id="pmtFootCount">0</span></span>
             <span id="pmtFootTotal">0</span>
@@ -40177,6 +40190,7 @@ const PB_FIXED_DATA = [
   }
 
   function pmtClose() {
+    try { pmtQrPopShow(false); } catch (e) {}
     document.getElementById('pmtOverlay').classList.remove('show');
   }
 
@@ -40569,22 +40583,27 @@ const PB_FIXED_DATA = [
   function pmtNoDiacritics(t) {
     return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^A-Za-z0-9 \-]/g, '').trim();
   }
+  function pmtQrPopShow(on) {
+    const p = document.getElementById('pmtQrPop');
+    if (p) p.classList.toggle('show', !!on);
+  }
   function pmtQrUpdate(need) {
     const box = document.getElementById('pmtQrBox');
-    if (!box) return;
-    if (pmtMethods.indexOf('bank') < 0) { box.style.display = 'none'; box.dataset.key = ''; box.innerHTML = ''; return; }
+    const body = document.getElementById('pmtQrPopBody');
+    if (!box || !body) return;
+    if (pmtMethods.indexOf('bank') < 0) { box.style.display = 'none'; body.dataset.key = ''; body.innerHTML = ''; pmtQrPopShow(false); return; }
     const amt = pmtMethods.length > 1 ? (pmtAmounts.bank || 0) : need;
     const t = pbhFindTable(pmtTableId);
     const memo = 'TT ' + pmtNoDiacritics((t && t.orderCode) || 'don hang');
     box.style.display = '';
     const key = amt + '|' + memo;
-    if (box.dataset.key === key) return;
-    box.dataset.key = key;
+    if (body.dataset.key === key) return;
+    body.dataset.key = key;
     let svg = '';
     try {
-      svg = window.MiuQR.svg(window.MiuQR.vietqr({ bin: PMT_BANK.bin, acc: PMT_BANK.acc, amount: amt, memo: memo }), 150);
+      svg = window.MiuQR.svg(window.MiuQR.vietqr({ bin: PMT_BANK.bin, acc: PMT_BANK.acc, amount: amt, memo: memo }), 240);
     } catch (e) { console.error('[QR]', e); }
-    box.innerHTML = '<div class="pmt-qr"><div class="pmt-qr-img">' + svg + '</div>' +
+    body.innerHTML = '<div class="pmt-qr"><div class="pmt-qr-img">' + svg + '</div>' +
       '<div class="pmt-qr-info"><b>' + PMT_BANK.bankName + '</b><br>STK: <b>' + PMT_BANK.acc + '</b><br>' + PMT_BANK.name + '<br>' +
       (amt > 0 ? 'Số tiền: <b>' + pmtFmt(amt) + 'đ</b><br>' : 'Nhập số tiền chuyển khoản để QR tự điền<br>') +
       'Nội dung: <b>' + memo + '</b></div></div>';
